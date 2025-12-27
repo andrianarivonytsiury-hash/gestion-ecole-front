@@ -376,6 +376,19 @@ export const useDemoStore = defineStore("demo", {
       this.studentDetails[id] = detail;
       return detail;
     },
+    async addStudent(payload: { matricule: string; firstName: string; lastName: string; classId: number; guardianIds?: number[] }, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/students`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchStudents(apiBase);
+    },
+    async deleteStudent(id: number, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/students/${id}`, { method: "DELETE" });
+      await this.fetchStudents(apiBase);
+      delete this.studentDetails[id];
+    },
     async bootstrap(apiBase: string = API_BASE) {
       await Promise.all([
         this.fetchFinances(apiBase),
@@ -392,9 +405,6 @@ export const useDemoStore = defineStore("demo", {
     initSocket(apiBase: string = API_BASE) {
       if (socket) return;
       socket = io(apiBase, { transports: ["websocket", "polling"] });
-      socket.on("connect", () => {
-        // ready
-      });
       socket.on("students:updated", () => this.fetchStudents(apiBase));
       socket.on("attendance:updated", () => this.fetchAttendance(apiBase));
       socket.on("payments:updated", () => this.fetchPayments(apiBase));
