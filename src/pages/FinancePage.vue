@@ -1,35 +1,35 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <div class="section-head">
       <div>
         <p class="eyebrow">Finances</p>
         <h1 class="text-2xl font-semibold text-ink">Flux et statistiques</h1>
       </div>
-      <button class="btn-primary">Nouvelle écriture</button>
+      <button class="btn-primary">Nouvelle ecriture</button>
     </div>
 
     <div class="grid gap-4 lg:grid-cols-3">
       <div class="card">
         <p class="eyebrow">Encaissements</p>
         <p class="stat">{{ currency(totalCredit) }}</p>
-        <p class="hint text-primary">Inclut écolage</p>
+        <p class="hint text-primary">Inclut ecolage</p>
       </div>
       <div class="card">
-        <p class="eyebrow">Décaissements</p>
+        <p class="eyebrow">Decaissements</p>
         <p class="stat">{{ currency(totalDebit) }}</p>
         <p class="hint text-red-500">Charges, achats</p>
       </div>
       <div class="card">
         <p class="eyebrow">Solde courant</p>
         <p class="stat">{{ currency(currentSolde) }}</p>
-        <p class="hint text-secondary">Recalculé après chaque flux</p>
+        <p class="hint text-secondary">Recalcule apres chaque flux</p>
       </div>
     </div>
 
     <div class="panel">
       <div class="section-head">
         <h2>Par mois</h2>
-        <span class="hint">Débit / Crédit</span>
+        <span class="hint">Debit / Credit</span>
       </div>
       <div class="flex gap-3 overflow-x-auto pb-2">
         <div v-for="(item, month) in monthly" :key="month" class="min-w-[120px] bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -55,14 +55,16 @@
         <h2>Journal des flux</h2>
         <button class="link">Exporter CSV</button>
       </div>
+      <p v-if="store.financesLoading" class="px-4 pb-3 text-sm text-muted">Chargement des flux depuis l'API...</p>
+      <p v-else-if="store.financeError" class="px-4 pb-3 text-sm text-red-600">API finances: {{ store.financeError }} (affichage des donnees locales)</p>
       <table class="min-w-full text-sm">
         <thead class="bg-slate-50 text-muted uppercase text-xs">
           <tr>
             <th class="cell text-left">Date</th>
-            <th class="cell text-left">Référence</th>
-            <th class="cell text-left">Libellé</th>
-            <th class="cell text-right">Débit</th>
-            <th class="cell text-right">Crédit</th>
+            <th class="cell text-left">Reference</th>
+            <th class="cell text-left">Libelle</th>
+            <th class="cell text-right">Debit</th>
+            <th class="cell text-right">Credit</th>
             <th class="cell text-right">Solde</th>
           </tr>
         </thead>
@@ -82,21 +84,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'; // API pour valeurs dérivées.
-import { useDemoStore } from '../stores/demo'; // Store Pinia avec données mock.
+import { computed, onMounted } from 'vue';
+import { useDemoStore } from '../stores/demo';
 
-const store = useDemoStore(); // Instance du store.
+const store = useDemoStore();
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const totalCredit = computed(() => store.finances.reduce((sum, f) => sum + f.credit, 0)); // Somme des crédits.
-const totalDebit = computed(() => store.finances.reduce((sum, f) => sum + f.debit, 0)); // Somme des débits.
-const currentSolde = computed(() => store.finances.at(-1)?.solde ?? 0); // Solde du dernier flux.
-const monthly = computed(() => store.monthlyFinance); // Agrégat mensuel depuis le getter.
+const totalCredit = computed(() => store.finances.reduce((sum, f) => sum + f.credit, 0));
+const totalDebit = computed(() => store.finances.reduce((sum, f) => sum + f.debit, 0));
+const currentSolde = computed(() => store.finances.at(-1)?.solde ?? 0);
+const monthly = computed(() => store.monthlyFinance);
 
 const maxAmount = computed(() => {
-  const values = Object.values(monthly.value).flatMap((m) => [m.debit, m.credit]); // Collecte débits + crédits.
-  return Math.max(...values, 1); // Trouve le max pour dimensionner les barres.
+  const values = Object.values(monthly.value).flatMap((m) => [m.debit, m.credit]);
+  return Math.max(...values, 1);
 });
 
-const currency = (amount: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount); // Format EUR.
-const barWidth = (value: number) => `${Math.min(100, Math.round((value / maxAmount.value) * 100))}%`; // Pourcentage de barre.
+const currency = (amount: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+const barWidth = (value: number) => `${Math.min(100, Math.round((value / maxAmount.value) * 100))}%`;
+
+onMounted(() => {
+  store.fetchFinances(apiBase);
+});
 </script>

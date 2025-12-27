@@ -32,6 +32,8 @@
           <h2>Flux financiers</h2>
           <button class="link">Exporter CSV</button>
         </div>
+        <p v-if="store.financesLoading" class="px-4 pb-2 text-sm text-muted">Chargement des flux...</p>
+        <p v-else-if="store.financeError" class="px-4 pb-2 text-sm text-red-600">API finances: {{ store.financeError }}</p>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-muted uppercase text-xs">
@@ -186,5 +188,6 @@ const badgeClass = (status: string) => {
 
 onMounted(() => {
   store.fetchApiMessage(apiBase); // Charge le message depuis le backend au montage de la page.
+  store.fetchFinances(apiBase); // Charge les flux depuis le backend.
 });
 </script>
