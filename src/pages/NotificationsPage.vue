@@ -1,11 +1,13 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <div class="section-head">
       <div>
         <p class="eyebrow">Notifications</p>
         <h1 class="text-2xl font-semibold text-ink">Parents & utilisateurs</h1>
       </div>
-      <button class="btn-primary">Envoyer</button>
+      <div class="flex gap-3">
+        <button class="btn-primary" type="button" @click="refresh">Actualiser</button>
+      </div>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -21,6 +23,13 @@
 </template>
 
 <script setup lang="ts">
-import { useDemoStore } from '../stores/demo'; // Store Pinia avec notifications mock.
-const store = useDemoStore(); // Instance du store.
+import { onMounted } from 'vue';
+import { useDemoStore } from '../stores/demo';
+
+const store = useDemoStore();
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const refresh = () => store.fetchNotifications(apiBase);
+
+onMounted(refresh);
 </script>

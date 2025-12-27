@@ -29,6 +29,7 @@ export interface CourseRecord {
   class: string;
   label: string;
   start: string;
+  end: string;
   room: string;
   status: string;
 }
@@ -73,53 +74,6 @@ export interface HolidayRecord {
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-const financeSeed: FinanceFlow[] = [
-  { id: 1, date: '2025-01-05', reference: 'FAC-2025-001', libelle: 'Ecolage Janvier - Lina', debit: 0, credit: 200, solde: 200 },
-  { id: 2, date: '2025-01-06', reference: 'DEP-001', libelle: 'Fournitures labo', debit: 50, credit: 0, solde: 150 },
-  { id: 3, date: '2025-01-08', reference: 'FAC-2025-002', libelle: 'Ecolage Janvier - Noah', debit: 0, credit: 200, solde: 350 },
-  { id: 4, date: '2025-02-02', reference: 'FAC-2025-003', libelle: 'Ecolage Fevrier - Lina', debit: 0, credit: 200, solde: 550 },
-  { id: 5, date: '2025-02-04', reference: 'DEP-002', libelle: 'Maintenance reseau', debit: 80, credit: 0, solde: 470 },
-];
-
-const attendanceSeed: AttendanceRecord[] = [
-  { id: 1, studentId: 1, student: 'Lina Rakoto', courseId: 1, status: 'present', motif: '' },
-  { id: 2, studentId: 2, student: 'Noah Randrian', courseId: 1, status: 'retard', motif: 'Transport' },
-  { id: 3, studentId: 3, student: 'Sarina Andry', courseId: 2, status: 'absent', motif: 'Malade' },
-];
-
-const coursesSeed: CourseRecord[] = [
-  { id: 1, class: '6eme A', label: 'Mathematiques - Algebre', start: '08:00', room: 'Salle 101', status: 'prevu' },
-  { id: 2, class: 'Terminale S', label: 'Physique - Optique', start: '10:30', room: 'Lab 1', status: 'prevu' },
-  { id: 3, class: '6eme A', label: 'Anglais - Conversation', start: '14:00', room: 'Salle 202', status: 'prevu' },
-];
-
-const gradesSeed: GradeRecord[] = [
-  { id: 1, student: 'Lina Rakoto', valeur: 15, typeEval: 'Devoir', coeff: 1, courseId: 1 },
-  { id: 2, student: 'Noah Randrian', valeur: 12, typeEval: 'Interro', coeff: 1, courseId: 1 },
-  { id: 3, student: 'Sarina Andry', valeur: 17, typeEval: 'Projet', coeff: 2, courseId: 2 },
-];
-
-const paymentsSeed: PaymentRecord[] = [
-  { id: 1, student: 'Lina Rakoto', amount: 200, status: 'succeeded' },
-  { id: 2, student: 'Noah Randrian', amount: 200, status: 'requires_action' },
-];
-
-const notificationsSeed: NotificationRecord[] = [
-  { id: 1, title: 'Absence Sarina', message: 'Parent notifie par email', channel: 'email' },
-  { id: 2, title: 'Retard Noah', message: 'SMS envoye (5 min de retard)', channel: 'sms' },
-  { id: 3, title: 'Ecolage Lina', message: 'Lien de paiement Stripe', channel: 'email' },
-];
-
-const correspondenceSeed: CorrespondenceRecord[] = [
-  { id: 1, fromRole: 'parent', createdAt: '2025-01-07', message: 'Absence prevue le 10/01 pour rendez-vous.', studentId: 1 },
-  { id: 2, fromRole: 'prof', createdAt: '2025-01-08', message: 'Controle lundi, merci de signer le carnet.', studentId: 2 },
-];
-
-const holidaysSeed: HolidayRecord[] = [
-  { id: 1, label: 'Vacances de Noel', startDate: '2024-12-20', endDate: '2025-01-05', type: 'holiday' },
-  { id: 2, label: 'Journee pedagogique', startDate: '2025-02-14', endDate: '2025-02-14', type: 'pause' },
-];
 
 export const useDemoStore = defineStore('demo', {
   state: () => ({
@@ -178,10 +132,9 @@ export const useDemoStore = defineStore('demo', {
           moyen: item.moyen,
           statut: item.statut,
         }));
-        if (!this.finances.length) this.finances = financeSeed;
       } catch (err) {
         this.financeError = err instanceof Error ? err.message : 'Erreur finance';
-        if (!this.finances.length) this.finances = financeSeed;
+        this.finances = [];
       } finally {
         this.financesLoading = false;
       }
@@ -190,85 +143,103 @@ export const useDemoStore = defineStore('demo', {
       try {
         const res = await fetch(`${apiBase}/attendance`);
         if (!res.ok) throw new Error(`API ${res.status}`);
-        const data = (await res.json()) as Partial<AttendanceRecord>[];
-        this.attendance = data.map((item, idx) => ({
-          id: item.id ?? idx,
-          student: item.student ?? `Etudiant ${item.studentId ?? idx}`,
-          courseId: Number(item.courseId) || 0,
-          status: item.status ?? 'present',
-          motif: item.motif ?? '',
-        }));
-        if (!this.attendance.length) this.attendance = attendanceSeed;
+        const data = (await res.json()) as Array<Partial<AttendanceRecord> & { student?: { firstName?: string; lastName?: string; id?: number } }>;
+        this.attendance = data.map((item, idx) => {
+          const studentName = item.student
+            ? `${item.student.firstName ?? ''} ${item.student.lastName ?? ''}`.trim()
+            : item.student ?? '';
+          return {
+            id: item.id ?? idx,
+            student: studentName || `Etudiant ${item.studentId ?? idx}`,
+            studentId: item.studentId ?? item.student?.id,
+            courseId: Number(item.courseId) || 0,
+            status: item.status ?? 'present',
+            motif: item.motif ?? '',
+          };
+        });
       } catch (err) {
-        if (!this.attendance.length) this.attendance = attendanceSeed;
+        this.attendance = [];
       }
+    },
+    async addAttendance(payload: { courseId: number; studentId: number; status: string; motif?: string; student?: string }, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/attendance/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId: payload.courseId, records: [payload] }),
+      });
+      await this.fetchAttendance(apiBase);
     },
     async fetchCourses(apiBase: string = API_BASE) {
       try {
-        const res = await fetch(`${apiBase}/courses`);
+        const res = await fetch(`${apiBase}/timetable`);
         if (!res.ok) throw new Error(`API ${res.status}`);
-        const data = (await res.json()) as Partial<CourseRecord>[];
+        const data = (await res.json()) as Array<Partial<CourseRecord> & { course?: { subject?: string }; class?: { label?: string } } & { start?: string; end?: string; room?: string; status?: string }>;
         this.courses = data.map((item, idx) => ({
           id: item.id ?? idx,
-          class: item.class ?? 'Classe',
-          label: item.label ?? 'Cours',
-          start: item.start ?? '',
-          room: item.room ?? '',
+          class: item.class?.label ?? item.class ?? 'Classe',
+          label: item.course?.subject ?? item.label ?? 'Cours',
+          start: item.start ? new Date(item.start).toISOString().slice(11, 16) : '',
+          end: item.end ? new Date(item.end).toISOString().slice(11, 16) : '',
+          room: item.room ?? 'Salle',
           status: item.status ?? 'prevu',
         }));
-        if (!this.courses.length) this.courses = coursesSeed;
       } catch (err) {
-        if (!this.courses.length) this.courses = coursesSeed;
+        this.courses = [];
       }
     },
     async fetchGrades(apiBase: string = API_BASE) {
       try {
         const res = await fetch(`${apiBase}/grades`);
         if (!res.ok) throw new Error(`API ${res.status}`);
-        const data = (await res.json()) as Partial<GradeRecord>[];
+        const data = (await res.json()) as Array<Partial<GradeRecord> & { student?: { firstName?: string; lastName?: string }; course?: { subject?: string } }>;
         this.grades = data.map((item, idx) => ({
           id: item.id ?? idx,
-          student: item.student ?? `Etudiant ${item.courseId ?? ''}`,
+          student: item.student ? `${item.student.firstName ?? ''} ${item.student.lastName ?? ''}`.trim() : item.student ?? 'Etudiant',
           valeur: Number(item.valeur) || 0,
           typeEval: item.typeEval ?? 'Evaluation',
           coeff: Number(item.coeff) || 1,
           courseId: Number(item.courseId) || 0,
         }));
-        if (!this.grades.length) this.grades = gradesSeed;
       } catch (err) {
-        if (!this.grades.length) this.grades = gradesSeed;
+        this.grades = [];
       }
     },
     async fetchPayments(apiBase: string = API_BASE) {
       try {
         const res = await fetch(`${apiBase}/payments`);
         if (!res.ok) throw new Error(`API ${res.status}`);
-        const data = (await res.json()) as Partial<PaymentRecord>[];
+        const data = (await res.json()) as Array<Partial<PaymentRecord> & { student?: { firstName?: string; lastName?: string } }>;
         this.payments = data.map((item, idx) => ({
           id: item.id ?? idx,
-          student: item.student ?? 'Etudiant',
+          student: item.student ? `${item.student.firstName ?? ''} ${item.student.lastName ?? ''}`.trim() : item.student ?? 'Etudiant',
           amount: Number(item.amount) || 0,
           status: item.status ?? 'succeeded',
         }));
-        if (!this.payments.length) this.payments = paymentsSeed;
       } catch (err) {
-        if (!this.payments.length) this.payments = paymentsSeed;
+        this.payments = [];
       }
+    },
+    async createPayment(payload: { studentId: number; amount: number; currency?: string; method?: string }, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/payments/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchPayments(apiBase);
     },
     async fetchNotifications(apiBase: string = API_BASE) {
       try {
         const res = await fetch(`${apiBase}/notifications`);
         if (!res.ok) throw new Error(`API ${res.status}`);
-        const data = (await res.json()) as Partial<NotificationRecord>[];
+        const data = (await res.json()) as Array<Partial<NotificationRecord> & { payload?: any }>;
         this.notifications = data.map((item, idx) => ({
           id: item.id ?? idx,
-          title: item.title ?? 'Notification',
-          message: item.message ?? '',
+          title: item.payload?.title ?? item.title ?? (item as any).type ?? 'Notification',
+          message: item.payload?.message ?? item.message ?? '',
           channel: item.channel ?? 'email',
         }));
-        if (!this.notifications.length) this.notifications = notificationsSeed;
       } catch (err) {
-        if (!this.notifications.length) this.notifications = notificationsSeed;
+        this.notifications = [];
       }
     },
     async fetchCorrespondence(apiBase: string = API_BASE, studentId?: number) {
@@ -284,10 +255,17 @@ export const useDemoStore = defineStore('demo', {
           createdAt: item.createdAt ?? '',
           studentId: Number(item.studentId) || 0,
         }));
-        if (!this.correspondence.length) this.correspondence = correspondenceSeed;
       } catch (err) {
-        if (!this.correspondence.length) this.correspondence = correspondenceSeed;
+        this.correspondence = [];
       }
+    },
+    async addCorrespondence(payload: { studentId: number; fromRole: string; message: string }, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/correspondence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchCorrespondence(apiBase);
     },
     async fetchHolidays(apiBase: string = API_BASE) {
       try {
@@ -301,9 +279,8 @@ export const useDemoStore = defineStore('demo', {
           endDate: item.endDate ?? '',
           type: item.type ?? 'holiday',
         }));
-        if (!this.holidays.length) this.holidays = holidaysSeed;
       } catch (err) {
-        if (!this.holidays.length) this.holidays = holidaysSeed;
+        this.holidays = [];
       }
     },
     async bootstrap(apiBase: string = API_BASE) {

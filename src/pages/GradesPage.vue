@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <div class="section-head">
       <div>
@@ -34,6 +34,13 @@
 </template>
 
 <script setup lang="ts">
-import { useDemoStore } from '../stores/demo'; // Store Pinia de démo.
-const store = useDemoStore(); // Instance du store.
+import { onMounted } from 'vue';
+import { useDemoStore } from '../stores/demo';
+
+const store = useDemoStore();
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+onMounted(() => {
+  store.fetchGrades(apiBase);
+});
 </script>
