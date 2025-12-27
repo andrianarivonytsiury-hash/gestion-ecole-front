@@ -188,6 +188,6 @@ const badgeClass = (status: string) => {
 
 onMounted(() => {
   store.fetchApiMessage(apiBase); // Charge le message depuis le backend au montage de la page.
-  store.fetchFinances(apiBase); // Charge les flux depuis le backend.
+  store.bootstrap(apiBase); // Charge les donn├®es dynamiques (finances, presences, etc.).
 });
 </script>
