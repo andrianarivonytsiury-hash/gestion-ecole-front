@@ -79,6 +79,7 @@ const links = [
   { to: '/', label: 'Dashboard', kicker: 'Vue globale' },
   { to: '/finances', label: 'Finances', kicker: 'Flux + stats' },
   { to: '/absences', label: 'Absences', kicker: 'Presence cours' },
+   { to: '/students', label: 'Eleves', kicker: 'CRUD' },
   { to: '/notes', label: 'Notes', kicker: 'Saisie + lecture' },
   { to: '/timetable', label: 'Emplois du temps', kicker: 'Calendrier' },
   { to: '/payments', label: 'Paiements', kicker: 'Stripe mock' },

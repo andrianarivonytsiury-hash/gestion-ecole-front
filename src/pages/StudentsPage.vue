@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <form class="panel grid gap-4 md:grid-cols-3 items-end" @submit.prevent="submit">
+    <form class="panel grid gap-4 md:grid-cols-4 items-end" @submit.prevent="submit">
       <div>
         <label class="label">Matricule</label>
         <input v-model="form.matricule" type="text" class="input" placeholder="MAT-001" />
@@ -28,8 +28,9 @@
         <label class="label">Parents (IDs, séparés par des virgules)</label>
         <input v-model="guardians" type="text" class="input" placeholder="ex: 1,2" />
       </div>
-      <div class="flex items-center gap-3 md:col-span-3">
+      <div class="flex items-center gap-3 md:col-span-4 flex-wrap">
         <button class="btn-primary" type="submit" :disabled="loading">{{ loading ? 'Création...' : 'Ajouter' }}</button>
+        <button class="link" type="button" @click="reset">Annuler</button>
         <p class="text-sm" :class="msgClass">{{ message }}</p>
       </div>
     </form>
@@ -57,7 +58,8 @@
               <RouterLink class="link" :to="`/students/${s.id}`">{{ s.firstName }} {{ s.lastName }}</RouterLink>
             </td>
             <td class="cell">{{ s.class?.label || 'N/A' }}</td>
-            <td class="cell text-right">
+            <td class="cell text-right space-x-3">
+              <button class="link" type="button" @click="prefill(s)">Modifier</button>
               <button class="link text-red-600" type="button" @click="remove(s.id)" :disabled="loading">Supprimer</button>
             </td>
           </tr>
@@ -76,11 +78,17 @@ import { useDemoStore } from '../stores/demo';
 const store = useDemoStore();
 const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const form = ref({ matricule: '', firstName: '', lastName: '', classId: 1 });
+const form = ref({ id: null as number | null, matricule: '', firstName: '', lastName: '', classId: 1, guardianIds: [] as number[] });
 const guardians = ref('');
 const loading = ref(false);
 const message = ref('');
 const msgClass = computed(() => (message.value.startsWith('Erreur') ? 'text-red-600' : 'text-secondary'));
+
+const reset = () => {
+  form.value = { id: null, matricule: '', firstName: '', lastName: '', classId: 1, guardianIds: [] };
+  guardians.value = '';
+  message.value = '';
+};
 
 const submit = async () => {
   if (!form.value.matricule || !form.value.firstName || !form.value.lastName || !form.value.classId) {
@@ -94,24 +102,44 @@ const submit = async () => {
       .split(',')
       .map((v) => Number(v.trim()))
       .filter((n) => !Number.isNaN(n));
-    await store.addStudent(
-      {
-        matricule: form.value.matricule,
-        firstName: form.value.firstName,
-        lastName: form.value.lastName,
-        classId: form.value.classId,
-        guardianIds,
-      },
-      apiBase,
-    );
-    message.value = 'Élève créé';
-    form.value = { matricule: '', firstName: '', lastName: '', classId: 1 };
-    guardians.value = '';
+
+    if (form.value.id) {
+      await store.updateStudent(
+        {
+          id: form.value.id,
+          matricule: form.value.matricule,
+          firstName: form.value.firstName,
+          lastName: form.value.lastName,
+          classId: form.value.classId,
+          guardianIds,
+        },
+        apiBase,
+      );
+      message.value = 'Élève mis à jour';
+    } else {
+      await store.addStudent(
+        {
+          matricule: form.value.matricule,
+          firstName: form.value.firstName,
+          lastName: form.value.lastName,
+          classId: form.value.classId,
+          guardianIds,
+        },
+        apiBase,
+      );
+      message.value = 'Élève créé';
+    }
+    reset();
   } catch (err) {
-    message.value = 'Erreur : création impossible';
+    message.value = form.value.id ? 'Erreur : mise à jour impossible' : 'Erreur : création impossible';
   } finally {
     loading.value = false;
   }
+};
+
+const prefill = (s: any) => {
+  form.value = { id: s.id, matricule: s.matricule, firstName: s.firstName, lastName: s.lastName, classId: s.class?.id || 1, guardianIds: [] };
+  guardians.value = '';
 };
 
 const remove = async (id: number) => {

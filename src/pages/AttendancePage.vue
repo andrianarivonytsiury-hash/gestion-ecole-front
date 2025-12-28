@@ -12,7 +12,7 @@
         <label class="label">Cours</label>
         <select v-model.number="courseId" class="input">
           <option :value="null" disabled>Choisir un cours</option>
-          <option v-for="course in store.courses" :key="course.id" :value="course.id">
+          <option v-for="course in store.courses" :key="course.id" :value="course.courseId || course.id">
             {{ course.label }} - {{ course.class }} ({{ course.start }})
           </option>
         </select>
@@ -52,8 +52,8 @@
           <span class="pill bg-secondary/10 text-secondary">{{ course.start }}</span>
         </div>
         <div class="mt-4 space-y-2">
-          <div v-if="attendanceByCourse(course.id).length === 0" class="text-sm text-muted">Aucun enregistrement pour ce cours.</div>
-          <div v-for="record in attendanceByCourse(course.id)" :key="record.id" class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+          <div v-if="attendanceByCourse(course.courseId || course.id).length === 0" class="text-sm text-muted">Aucun enregistrement pour ce cours.</div>
+          <div v-for="record in attendanceByCourse(course.courseId || course.id)" :key="record.id" class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
             <span class="text-ink font-medium">{{ record.student }} (ID {{ record.studentId }})</span>
             <span class="pill" :class="badgeClass(record.status)">{{ record.status }}</span>
           </div>

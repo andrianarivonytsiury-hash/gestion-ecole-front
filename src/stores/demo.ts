@@ -33,11 +33,16 @@ export interface CourseRecord {
   end: string;
   room: string;
   status: string;
+  courseId?: number;
+  classId?: number;
+  startRaw?: string;
+  endRaw?: string;
 }
 
 export interface GradeRecord {
   id: number;
   student: string;
+  studentId?: number;
   valeur: number;
   typeEval: string;
   coeff: number;
@@ -82,6 +87,20 @@ export interface StudentRecord {
   class?: { label?: string };
 }
 
+export interface ClassRecord {
+  id: number;
+  label: string;
+  level: string;
+  academicYear: string;
+}
+
+export interface CourseCatalogRecord {
+  id: number;
+  subject: string;
+  classId: number;
+  classLabel?: string;
+}
+
 export interface StudentDetail {
   student: StudentRecord & { class?: { label?: string }; guardians?: { id: number; email?: string; phone?: string }[] };
   attendance: AttendanceRecord[];
@@ -103,6 +122,8 @@ export const useDemoStore = defineStore("demo", {
     finances: [] as FinanceFlow[],
     attendance: [] as AttendanceRecord[],
     courses: [] as CourseRecord[],
+    classes: [] as ClassRecord[],
+    courseCatalog: [] as CourseCatalogRecord[],
     grades: [] as GradeRecord[],
     payments: [] as PaymentRecord[],
     notifications: [] as NotificationRecord[],
@@ -160,6 +181,33 @@ export const useDemoStore = defineStore("demo", {
         this.financesLoading = false;
       }
     },
+    async createFinanceFlow(
+      payload: { date: string; reference: string; libelle: string; debit: number; credit: number; studentId?: number; moyen?: string; statut?: string },
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/finance/flows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchFinances(apiBase);
+    },
+    async updateFinanceFlow(
+      id: number,
+      payload: Partial<{ date: string; reference: string; libelle: string; debit: number; credit: number; studentId?: number; moyen?: string; statut?: string }>,
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/finance/flows/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchFinances(apiBase);
+    },
+    async deleteFinanceFlow(id: number, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/finance/flows/${id}`, { method: "DELETE" });
+      await this.fetchFinances(apiBase);
+    },
     async fetchAttendance(apiBase: string = API_BASE) {
       try {
         const res = await fetch(`${apiBase}/attendance`);
@@ -196,7 +244,11 @@ export const useDemoStore = defineStore("demo", {
         this.courses = data.map((item, idx) => ({
           id: item.id ?? idx,
           class: item.class?.label ?? (item as any).class ?? "Classe",
+          classId: (item as any).classId ?? (item as any).class?.id,
+          courseId: (item as any).courseId ?? (item as any).course?.id ?? item.id,
           label: item.course?.subject ?? item.label ?? "Cours",
+          startRaw: item.start ? new Date(item.start).toISOString().slice(0, 16) : "",
+          endRaw: item.end ? new Date(item.end).toISOString().slice(0, 16) : "",
           start: item.start ? new Date(item.start).toISOString().slice(11, 16) : "",
           end: item.end ? new Date(item.end).toISOString().slice(11, 16) : "",
           room: item.room ?? "Salle",
@@ -206,6 +258,63 @@ export const useDemoStore = defineStore("demo", {
         this.courses = [];
       }
     },
+    async fetchClasses(apiBase: string = API_BASE) {
+      try {
+        const res = await fetch(`${apiBase}/classes`);
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const data = (await res.json()) as Partial<ClassRecord>[];
+        this.classes = data.map((item, idx) => ({
+          id: item.id ?? idx,
+          label: item.label ?? "Classe",
+          level: item.level ?? "",
+          academicYear: item.academicYear ?? "",
+        }));
+      } catch (err) {
+        this.classes = [];
+      }
+    },
+    async fetchCourseCatalog(apiBase: string = API_BASE) {
+      try {
+        const res = await fetch(`${apiBase}/courses`);
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const data = (await res.json()) as Array<Partial<CourseCatalogRecord> & { class?: { label?: string; id?: number } }>;
+        this.courseCatalog = data.map((item, idx) => ({
+          id: item.id ?? idx,
+          subject: item.subject ?? (item as any).label ?? "Cours",
+          classId: item.classId ?? (item.class as any)?.id ?? 0,
+          classLabel: item.class?.label,
+        }));
+      } catch (err) {
+        this.courseCatalog = [];
+      }
+    },
+    async createTimetableSlot(
+      payload: { start: string; end: string; room: string; status: string; classId: number; courseId: number },
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/timetable`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchCourses(apiBase);
+    },
+    async updateTimetableSlot(
+      id: number,
+      payload: Partial<{ start: string; end: string; room: string; status: string; classId: number; courseId: number }>,
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/timetable/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchCourses(apiBase);
+    },
+    async deleteTimetableSlot(id: number, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/timetable/${id}`, { method: "DELETE" });
+      await this.fetchCourses(apiBase);
+    },
     async fetchGrades(apiBase: string = API_BASE) {
       try {
         const res = await fetch(`${apiBase}/grades`);
@@ -214,6 +323,7 @@ export const useDemoStore = defineStore("demo", {
         this.grades = data.map((item, idx) => ({
           id: item.id ?? idx,
           student: item.student ? `${item.student.firstName ?? ""} ${item.student.lastName ?? ""}`.trim() : item.student ?? "Etudiant",
+          studentId: (item as any).studentId ?? (item as any).student?.id,
           valeur: Number(item.valeur) || 0,
           typeEval: item.typeEval ?? "Evaluation",
           coeff: Number(item.coeff) || 1,
@@ -222,6 +332,33 @@ export const useDemoStore = defineStore("demo", {
       } catch (err) {
         this.grades = [];
       }
+    },
+    async createGrade(
+      payload: { studentId: number; courseId: number; valeur: number; typeEval: string; coeff: number; createdBy: number },
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/grades`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchGrades(apiBase);
+    },
+    async updateGrade(
+      id: number,
+      payload: Partial<{ studentId: number; courseId: number; valeur: number; typeEval: string; coeff: number; updatedBy: number }>,
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/grades/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchGrades(apiBase);
+    },
+    async deleteGrade(id: number, apiBase: string = API_BASE) {
+      await fetch(`${apiBase}/grades/${id}`, { method: "DELETE" });
+      await this.fetchGrades(apiBase);
     },
     async fetchPayments(apiBase: string = API_BASE) {
       try {
@@ -384,6 +521,20 @@ export const useDemoStore = defineStore("demo", {
       });
       await this.fetchStudents(apiBase);
     },
+    async updateStudent(
+      payload: { id: number; matricule?: string; firstName?: string; lastName?: string; classId?: number; guardianIds?: number[] },
+      apiBase: string = API_BASE,
+    ) {
+      await fetch(`${apiBase}/students/${payload.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await this.fetchStudents(apiBase);
+      if (payload.id && this.studentDetails[payload.id]) {
+        await this.fetchStudentDetails(payload.id, apiBase);
+      }
+    },
     async deleteStudent(id: number, apiBase: string = API_BASE) {
       await fetch(`${apiBase}/students/${id}`, { method: "DELETE" });
       await this.fetchStudents(apiBase);
@@ -394,6 +545,8 @@ export const useDemoStore = defineStore("demo", {
         this.fetchFinances(apiBase),
         this.fetchAttendance(apiBase),
         this.fetchCourses(apiBase),
+        this.fetchClasses(apiBase),
+        this.fetchCourseCatalog(apiBase),
         this.fetchGrades(apiBase),
         this.fetchPayments(apiBase),
         this.fetchNotifications(apiBase),
@@ -411,6 +564,7 @@ export const useDemoStore = defineStore("demo", {
       socket.on("grades:updated", () => this.fetchGrades(apiBase));
       socket.on("correspondence:updated", () => this.fetchCorrespondence(apiBase));
       socket.on("finance:updated", () => this.fetchFinances(apiBase));
+      socket.on("timetable:updated", () => this.fetchCourses(apiBase));
     },
   },
 });

@@ -8,6 +8,7 @@ import TimetablePage from "../pages/TimetablePage.vue";
 import PaymentsPage from "../pages/PaymentsPage.vue";
 import NotificationsPage from "../pages/NotificationsPage.vue";
 import CorrespondencePage from "../pages/CorrespondencePage.vue";
+import StudentsPage from "../pages/StudentsPage.vue";
 import StudentDetailPage from "../pages/StudentDetailPage.vue";
 
 const router = createRouter({
@@ -21,6 +22,7 @@ const router = createRouter({
     { path: "/payments", name: "payments", component: PaymentsPage },
     { path: "/notifications", name: "notifications", component: NotificationsPage },
     { path: "/correspondence", name: "correspondence", component: CorrespondencePage },
+    { path: "/students", name: "students", component: StudentsPage },
     { path: "/students/:id", name: "student-details", component: StudentDetailPage },
   ],
 });
