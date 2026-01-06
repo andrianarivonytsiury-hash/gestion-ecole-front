@@ -1,5 +1,6 @@
-ï»¿<template>
-  <div class="min-h-screen bg-surface text-ink flex">
+<template>
+  <RouterView v-if="isAuthLayout" />
+  <div v-else class="min-h-screen bg-surface text-ink flex">
     <aside class="w-72 hidden lg:flex flex-col border-r border-slate-200 bg-white">
       <div class="px-5 py-6 flex items-center gap-3">
         <span class="h-11 w-11 rounded-2xl bg-primary text-white grid place-items-center font-semibold">E</span>
@@ -22,7 +23,7 @@
           <span class="text-xs text-muted">{{ link.kicker }}</span>
         </RouterLink>
       </nav>
-      <div class="px-3 mt-4 mb-2 text-xs uppercase text-muted">Ã‰lÃ¨ves</div>
+      <div class="px-3 mt-4 mb-2 text-xs uppercase text-muted">Élèves</div>
       <div class="flex-1 overflow-y-auto px-3 pb-4 space-y-1">
         <RouterLink
           v-for="student in store.students"
@@ -34,11 +35,11 @@
           <span class="font-semibold text-ink">{{ student.firstName }} {{ student.lastName }}</span>
           <span class="text-xs text-muted">{{ student.class?.label || student.matricule }}</span>
         </RouterLink>
-        <p v-if="!store.students.length" class="text-xs text-muted px-2">Aucun Ã©lÃ¨ve</p>
+        <p v-if="!store.students.length" class="text-xs text-muted px-2">Aucun élève</p>
       </div>
       <div class="px-5 py-4 text-xs text-muted">
         <p>Role: {{ labelRole(store.role) }}</p>
-        <p>Socket: temps rÃ©el</p>
+        <p>Socket: temps réel</p>
       </div>
     </aside>
 
@@ -68,11 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { RouterLink, RouterView } from 'vue-router';
+import { computed, onMounted } from 'vue';
+import { RouterLink, RouterView, useRoute } from 'vue-router';
 import { useDemoStore, type Role } from './stores/demo';
 
 const store = useDemoStore();
+const route = useRoute();
+const isAuthLayout = computed(() => route.meta?.layout === 'auth');
 const roles: Role[] = ['admin', 'prof', 'parent'];
 
 const links = [
@@ -99,3 +102,6 @@ onMounted(() => {
   store.initSocket(apiBase);
 });
 </script>
+
+
+

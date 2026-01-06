@@ -10,10 +10,12 @@ import NotificationsPage from "../pages/NotificationsPage.vue";
 import CorrespondencePage from "../pages/CorrespondencePage.vue";
 import StudentsPage from "../pages/StudentsPage.vue";
 import StudentDetailPage from "../pages/StudentDetailPage.vue";
+import LoginPage from "../pages/LoginPage.vue";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: "/login", name: "login", component: LoginPage, meta: { layout: "auth" } },
     { path: "/", name: "dashboard", component: DashboardPage },
     { path: "/finances", name: "finances", component: FinancePage },
     { path: "/absences", name: "absences", component: AttendancePage },
