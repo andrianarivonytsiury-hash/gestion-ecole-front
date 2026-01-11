@@ -18,7 +18,7 @@
           <label class="label">Eleve</label>
           <select v-model.number="form.studentId" class="input">
             <option :value="null" disabled>Choisir un eleve</option>
-            <option v-for="student in store.students" :key="student.id" :value="student.id">
+            <option v-for="student in studentsStore.students" :key="student.id" :value="student.id">
               {{ student.firstName }} {{ student.lastName }} ({{ student.matricule }})
             </option>
           </select>
@@ -93,8 +93,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useDemoStore, type GradeRecord } from '../stores/demo';
+import { useStudentsStore } from '../stores/students';
 
 const store = useDemoStore();
+const studentsStore = useStudentsStore();
 const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const canEditGrades = computed(() => store.role === 'admin' || store.role === 'prof');
@@ -150,7 +152,7 @@ const submit = async () => {
 const prefill = (grade: GradeRecord) => {
   form.value = {
     id: grade.id,
-    studentId: grade.studentId ?? store.students.find((s) => `${s.firstName} ${s.lastName}`.trim() === grade.student)?.id ?? null,
+    studentId: grade.studentId ?? studentsStore.students.find((s) => `${s.firstName} ${s.lastName}`.trim() === grade.student)?.id ?? null,
     courseId: grade.courseId ?? null,
     typeEval: grade.typeEval,
     coeff: grade.coeff,
@@ -176,7 +178,7 @@ const remove = async (id: number) => {
 
 onMounted(() => {
   store.fetchGrades(apiBase);
-  if (!store.students.length) store.fetchStudents(apiBase);
+  if (!studentsStore.students.length) studentsStore.fetchStudents();
   if (!store.courseCatalog.length) store.fetchCourseCatalog(apiBase);
 });
 </script>

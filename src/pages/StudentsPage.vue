@@ -73,10 +73,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useDemoStore } from '../stores/demo';
+import { useStudentsStore, type StudentRecord } from '../stores/students';
 
-const store = useDemoStore();
-const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const store = useStudentsStore();
 
 const form = ref({ id: null as number | null, matricule: '', firstName: '', lastName: '', classId: 1, guardianIds: [] as number[] });
 const guardians = ref('');
@@ -113,7 +112,6 @@ const submit = async () => {
           classId: form.value.classId,
           guardianIds,
         },
-        apiBase,
       );
       message.value = 'Élève mis à jour';
     } else {
@@ -125,7 +123,6 @@ const submit = async () => {
           classId: form.value.classId,
           guardianIds,
         },
-        apiBase,
       );
       message.value = 'Élève créé';
     }
@@ -137,7 +134,7 @@ const submit = async () => {
   }
 };
 
-const prefill = (s: any) => {
+const prefill = (s: StudentRecord) => {
   form.value = { id: s.id, matricule: s.matricule, firstName: s.firstName, lastName: s.lastName, classId: s.class?.id || 1, guardianIds: [] };
   guardians.value = '';
 };
@@ -146,7 +143,7 @@ const remove = async (id: number) => {
   loading.value = true;
   message.value = '';
   try {
-    await store.deleteStudent(id, apiBase);
+    await store.deleteStudent(id);
     message.value = 'Élève supprimé';
   } catch (err) {
     message.value = 'Erreur : suppression impossible';
@@ -156,6 +153,6 @@ const remove = async (id: number) => {
 };
 
 onMounted(() => {
-  store.fetchStudents(apiBase);
+  store.fetchStudents();
 });
 </script>

@@ -103,14 +103,13 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { useDemoStore } from '../stores/demo';
+import { useStudentsStore } from '../stores/students';
 
 const route = useRoute();
-const store = useDemoStore();
-const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const studentsStore = useStudentsStore();
 
 const detailId = computed(() => Number(route.params.id));
-const detail = computed(() => store.studentDetails[detailId.value]);
+const detail = computed(() => studentsStore.studentDetails[detailId.value]);
 const fullName = computed(() => `${detail.value?.student.firstName ?? ''} ${detail.value?.student.lastName ?? ''}`.trim());
 
 const currency = (amount: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
@@ -128,7 +127,7 @@ const statusClass = (status: string) => {
 
 const refresh = async () => {
   if (!detailId.value) return;
-  await store.fetchStudentDetails(detailId.value, apiBase);
+  await studentsStore.fetchStudentDetails(detailId.value);
 };
 
 watch(
@@ -140,6 +139,6 @@ watch(
 );
 
 onMounted(() => {
-  if (!store.students.length) store.fetchStudents(apiBase);
+  if (!studentsStore.students.length) studentsStore.fetchStudents();
 });
 </script>

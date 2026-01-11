@@ -26,7 +26,7 @@
       <div class="px-3 mt-4 mb-2 text-xs uppercase text-muted">Élèves</div>
       <div class="flex-1 overflow-y-auto px-3 pb-4 space-y-1">
         <RouterLink
-          v-for="student in store.students"
+          v-for="student in studentsStore.students"
           :key="student.id"
           :to="`/students/${student.id}`"
           class="nav-link"
@@ -35,7 +35,7 @@
           <span class="font-semibold text-ink">{{ student.firstName }} {{ student.lastName }}</span>
           <span class="text-xs text-muted">{{ student.class?.label || student.matricule }}</span>
         </RouterLink>
-        <p v-if="!store.students.length" class="text-xs text-muted px-2">Aucun élève</p>
+        <p v-if="!studentsStore.students.length" class="text-xs text-muted px-2">Aucun élève</p>
       </div>
       <div class="px-5 py-4 text-xs text-muted">
         <p>Role: {{ labelRole(store.role) }}</p>
@@ -72,8 +72,10 @@
 import { computed, onMounted } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 import { useDemoStore, type Role } from './stores/demo';
+import { useStudentsStore } from './stores/students';
 
 const store = useDemoStore();
+const studentsStore = useStudentsStore();
 const route = useRoute();
 const isAuthLayout = computed(() => route.meta?.layout === 'auth');
 const roles: Role[] = ['admin', 'prof', 'parent'];
@@ -100,6 +102,7 @@ onMounted(() => {
   const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
   store.bootstrap(apiBase);
   store.initSocket(apiBase);
+  studentsStore.fetchStudents();
 });
 </script>
 
